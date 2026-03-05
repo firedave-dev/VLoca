@@ -1,36 +1,33 @@
 <?php
 session_start();
-
-// 300 secondes = 5 minutes
-if (isset($_SESSION['last_action'])) {
-    $secondsInactive = time() - $_SESSION['last_action'];
-    if ($secondsInactive >= 300) {
-        session_unset();
-        session_destroy();
-        header("Location: login.php");
-        exit();
-    }
+if (!isset($_SESSION['user']) || (time() - $_SESSION['last_action'] > 300)) {
+    session_destroy(); header("Location: login.php"); exit();
 }
 $_SESSION['last_action'] = time();
+require 'db.php';
 
-if (!isset($_SESSION['user'])) {
-    header("Location: login.php");
-    exit();
-}
-
-// Supprimer un véhicule
-if (isset($_GET['delete'])) {
-    $id = $_GET['delete'];
-    $stmt = $pdo->prepare("DELETE FROM vehicules WHERE id = ?");
-    $stmt->execute([$id]);
-    header("Location: index.php");
-}
-
-// Ajouter un véhicule
-if (isset($_POST['add_car'])) {
-    $stmt = $pdo->prepare("INSERT INTO vehicules (immatriculation, marque, modele, prix_journalier) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$_POST['immat'], $_POST['marque'], $_POST['modele'], $_POST['prix']]);
-}
-
-$vehicules = $pdo->query("SELECT * FROM vehicules")->fetchAll();
+$total_cars = $pdo->query("SELECT COUNT(*) FROM vehicules")->fetchColumn();
+$total_rented = $pdo->query("SELECT COUNT(*) FROM vehicules WHERE statut='loue'")->fetchColumn();
 ?>
+<!DOCTYPE html>
+<html lang="fr">
+<head><link rel="stylesheet" href="style.css"><title>Dashboard</title></head>
+<body>
+    <div class="container">
+        <nav>
+            <a href="index.php">Dashboard</a>
+            <a href="vehicules.php">Véhicules</a>
+            <a href="locations.php">Locations</a>
+            <a href="logout.php" style="color:var(--danger)">Quitter</a>
+        </nav>
+        <div class="card">
+            <h1>Bienvenue, <?= $_SESSION['user'] ?></h1>
+            <p>Statistiques actuelles :</p>
+            <ul>
+                <li>Total véhicules : <?= $total_cars ?></li>
+                <li>En location : <?= $total_rented ?></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
