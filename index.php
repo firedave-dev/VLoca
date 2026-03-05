@@ -22,7 +22,7 @@ $total_rented = $pdo->query("SELECT COUNT(*) FROM vehicules WHERE statut='loue'"
         </nav>
         <div class="card">
             <h1>Bienvenue, <?= $_SESSION['user'] ?></h1>
-            <h1>VLoca - Système de Gestion de Location</h1>
+            <h1>VLoca - Gestion Moderne</h1>
             <p>Statistiques actuelles :</p>
             <ul>
                 <li>Total véhicules : <?= $total_cars ?></li>
