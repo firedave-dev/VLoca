@@ -4,15 +4,19 @@ require_once 'db.php';
 
 if (isset($_POST['login'])) {
     $identifiant = $_POST['identifiant'];
-    $mdp = $_POST['mdp'];
+    $mdp_saisi = $_POST['mdp'];
 
-    if ($identifiant === 'david' && $mdp === '1234') {
-        $_SESSION['user'] = $identifiant;
+    $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE identifiant = ?");
+    $stmt->execute([$identifiant]);
+    $user = $stmt->fetch();
+
+    if ($user && password_verify($mdp_saisi, $user['mot_de_passe'])) {
+        $_SESSION['user'] = $user['identifiant'];
         $_SESSION['last_action'] = time();
         header("Location: index.php");
         exit();
     } else {
-        $error = "Identifiants incorrects";
+        $error = "Identifiant ou mot de passe incorrect.";
     }
 }
 ?>
