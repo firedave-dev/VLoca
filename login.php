@@ -1,41 +1,59 @@
 <?php
-session_start();
-require_once 'db.php';
+declare(strict_types=1);
 
-if (isset($_POST['login'])) {
-    $identifiant = $_POST['identifiant'];
-    $mdp_saisi = $_POST['mdp'];
+require_once __DIR__ . '/layout.php';
 
-    $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE identifiant = ?");
-    $stmt->execute([$identifiant]);
-    $user = $stmt->fetch();
+if (!empty($_SESSION['user'])) {
+    redirect('index.php');
+}
 
-    if ($user && password_verify($mdp_saisi, $user['mot_de_passe'])) {
-        $_SESSION['user'] = $user['identifiant'];
-        $_SESSION['last_action'] = time();
-        header("Location: index.php");
-        exit();
+$error = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $identifiant = trim($_POST['identifiant'] ?? '');
+    $password = $_POST['mdp'] ?? '';
+
+    if ($identifiant === '' || $password === '') {
+        $error = 'Veuillez renseigner votre identifiant et votre mot de passe.';
     } else {
-        $error = "Identifiant ou mot de passe incorrect.";
+        $stmt = $pdo->prepare("SELECT identifiant, mot_de_passe FROM utilisateurs WHERE identifiant = ?");
+        $stmt->execute([$identifiant]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user && password_verify($password, $user['mot_de_passe'])) {
+            $_SESSION['user'] = $user['identifiant'];
+            $_SESSION['last_action'] = time();
+            set_flash('success', 'Connexion reussie. Bienvenue sur votre espace de gestion.');
+            redirect('index.php');
+        }
+
+        $error = 'Identifiant ou mot de passe incorrect.';
     }
 }
+
+render_auth_start(
+    'Connexion',
+    'Accedez a votre espace',
+    'Une interface sobre et professionnelle pour piloter votre parc automobile et suivre les locations de vos clients.'
+);
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="style.css">
-    <title>Connexion</title>
-</head>
-<body>
-    <div class="container">
-        <h2>Connexion</h2>
-        <?php if(isset($error)) echo "<p style='color:red'>$error</p>"; ?>
-        <form method="POST">
-            <input type="text" name="identifiant" placeholder="Identifiant" required><br><br>
-            <input type="password" name="mdp" placeholder="Mot de passe" required><br><br>
-            <button type="submit" name="login" class="btn btn-add">Se connecter</button>
-        </form>
+
+<?php if ($error !== null): ?>
+    <div class="alert alert-error"><?= e($error) ?></div>
+<?php endif; ?>
+
+<form method="POST">
+    <div class="field">
+        <label for="identifiant">Identifiant</label>
+        <input id="identifiant" type="text" name="identifiant" placeholder="Votre identifiant" required>
     </div>
-</body>
-</html>
+
+    <div class="field">
+        <label for="mdp">Mot de passe</label>
+        <input id="mdp" type="password" name="mdp" placeholder="Votre mot de passe" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Se connecter</button>
+</form>
+
+<?php render_auth_end(); ?>
